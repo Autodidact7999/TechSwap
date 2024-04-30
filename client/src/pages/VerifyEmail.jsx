@@ -4,7 +4,7 @@ import axios from "axios";
 import LoadingSpinner from "../components/loader/ButtonLoadingSpinner";
 
 // const BASE_URL = process.env.REACT_APP_API_URL;
-const BASE_URL = 'http://localhost:4000';
+const BASE_URL = 'https://techswap.onrender.com';
 
 const VerifyEmail = () => {
   const [loading, setLoading] = useState(false);

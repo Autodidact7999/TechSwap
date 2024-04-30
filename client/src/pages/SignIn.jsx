@@ -171,7 +171,7 @@ const SignIn = () => {
         </form>
         <span className="flex items-center justify-center py-4 text-sm text-gray-600 ">
           <a
-            href=""
+            href="github.com/autodidact/techswap"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center hover:text-blue-500"

@@ -1,7 +1,7 @@
 # Global settings applied to the whole site
 [build]
-  base = "client/"        # Base directory for the project
-  publish = "client/build" # Directory to publish
+  base = "client"        # Base directory for the project
+  publish = "build"      # Directory to publish relative to the base
   command = "npm run build" # Command to build your site
 
 # Redirects

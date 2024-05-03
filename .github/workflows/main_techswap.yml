@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - TechSwap
+name: Build and deploy MERN app to Azure Web App - TechSwap
 
 on:
   push:
@@ -12,60 +9,73 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
 
-      - name: npm install, build, and test
+      - name: Install and build server
         run: |
+          cd server
           npm install
           npm run build --if-present
-          npm run test --if-present
 
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      - name: Install and build client
+        run: |
+          cd client
+          npm install
+          npm run build
 
-      - name: Upload artifact for deployment job
+      - name: Zip server for deployment
+        run: zip -r server.zip server/
+
+      - name: Zip client build for deployment
+        run: zip -r client-build.zip client/build/
+
+      - name: Upload server artifact
         uses: actions/upload-artifact@v3
         with:
-          name: node-app
-          path: release.zip
+          name: server
+          path: server.zip
+
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: client-build
+          path: client-build.zip
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
       name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    permissions:
-      id-token: write #This is required for requesting the JWT
-
     steps:
-      - name: Download artifact from build job
+      - name: Download server artifact
         uses: actions/download-artifact@v3
         with:
-          name: node-app
+          name: server
 
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
-      
+      - name: Download client artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: client-build
+
+      - name: Unzip server
+        run: unzip server.zip
+
+      - name: Unzip client build
+        run: unzip client-build.zip -d server/public
+
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D0F76ED899B240E1A28C5726BA6C9CE4 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4E1119234A0C43D580025B57BBBDD9B2 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2F8A1242D364426E83EA90A166B24F73 }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'TechSwap'
-          slot-name: 'Production'
-          package: .
-          
+          package: server

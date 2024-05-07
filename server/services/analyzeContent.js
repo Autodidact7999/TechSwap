@@ -5,24 +5,24 @@ const { saveLogInfo } = require("../middlewares/logger/logInfo");
 const analyzeTextWithOpenAI = async (content, OPENAI_API_KEY) => {
   console.log("Setting up OpenAI Configuration...");
   const configuration = new Configuration({
-    apiKey: OPENAI_API_KEY,
+      apiKey: OPENAI_API_KEY,
   });
   const openai = new OpenAIApi(configuration);
 
   try {
-    console.log("Sending content for moderation...");
-    const response = await openai.createModeration({
-      input: content
-    });
+      console.log("Sending content for moderation...");
+      const response = await openai.createModeration({
+          input: content
+      });
 
-    const results = response.data.results;
-    const flaggedItems = results.filter(item => item.flagged);
+      const results = response.data.results;
+      const flaggedItems = results.filter(item => item.flagged);
 
-    console.log("Moderation results received:", flaggedItems);
-    return flaggedItems.length ? flaggedItems : null;
+      console.log("Moderation results received:", flaggedItems);
+      return flaggedItems.length ? flaggedItems : null;
   } catch (error) {
-    console.error("Error analyzing text with OpenAI:", error.message);
-    throw new Error(`Error analyzing text with OpenAI: ${error.message}`);
+      console.error("Error analyzing text with OpenAI:", error.message);
+      throw new Error(`Error analyzing text with OpenAI: ${error.message}`);
   }
 };
 
@@ -60,6 +60,7 @@ const analyzeContent = async (req, res, next) => {
 };
 
 module.exports = analyzeContent;
+
 
 
 

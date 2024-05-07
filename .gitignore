@@ -18,3 +18,4 @@ jspm_packages
 todo.txt
 .idea
 .vscode
+.env

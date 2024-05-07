@@ -111,9 +111,10 @@ const analyzeContent = async (req, res, next) => {
     }
   } catch (error) {
     console.error(`Error processing Perspective API response: ${error.message}`);
-    await saveLogInfo(null, errorMessage, "Perspective API", "error");
+    await saveLogInfo(null, `Error processing Perspective API response: ${error.message}`, "Perspective API", "error");
     next();
   }
 };
+
 
 module.exports = analyzeContent;

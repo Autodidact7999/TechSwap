@@ -1,6 +1,5 @@
 const { Configuration, OpenAIApi } = require("openai");
 const { saveLogInfo } = require("../middlewares/logger/logInfo");
-const Config = require("../models/config.model");
 
 // Function to use OpenAI's Content Moderation API
 const analyzeTextWithOpenAI = async (content, OPENAI_API_KEY) => {
@@ -29,47 +28,146 @@ const analyzeTextWithOpenAI = async (content, OPENAI_API_KEY) => {
 
 // Function to handle content analysis and response
 const analyzeContent = async (req, res, next) => {
-  console.log("Retrieving environment variables for OpenAI API...");
+  console.log("Retrieving environment variables...");
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const USE_OPENAI_API = process.env.USE_OPENAI_API === 'true'; // Convert string to boolean
 
-  let useOpenAI;
-  try {
-    console.log("Fetching configuration from the database...");
-    const config = await Config.findOne({}, { _id: 0, __v: 0 });
-    useOpenAI = config.useOpenAI;
-    console.log("Use OpenAI setting:", useOpenAI);
-  } catch (error) {
-    console.error("Error fetching configuration:", error.message);
-    useOpenAI = false;
-  }
-
-  if (!useOpenAI || !OPENAI_API_KEY) {
+  if (!USE_OPENAI_API || !OPENAI_API_KEY) {
     console.log("Skipping moderation due to configuration or missing API key.");
     return next();
   }
 
   const { content } = req.body;
   try {
-    let flaggedContent = null;
-    if (useOpenAI && OPENAI_API_KEY) {
-      console.log("Analyzing content...");
-      flaggedContent = await analyzeTextWithOpenAI(content, OPENAI_API_KEY);
-    }
+    console.log("Analyzing content...");
+    let flaggedContent = await analyzeTextWithOpenAI(content, OPENAI_API_KEY);
 
     if (flaggedContent) {
       console.log("Inappropriate content found. Blocking response.");
-      const type = "inappropriateContent";
-      return res.status(403).json({ type, details: flaggedContent });
+      return res.status(403).json({
+        type: "inappropriateContent",
+        details: flaggedContent
+      });
     } else {
       console.log("No inappropriate content detected. Proceeding...");
       next();
     }
   } catch (error) {
-    const errorMessage = `Error processing content moderation response: ${error.message}`;
-    console.error(errorMessage);
-    await saveLogInfo(null, errorMessage, "OpenAI Content Moderation API", "error");
+    console.error("Error processing content moderation response:", error.message);
+    await saveLogInfo(null, error.message, "OpenAI Content Moderation API", "error");
     next();
   }
 };
+
+module.exports = analyzeContent;
+
+
+
+
+
+
+
+
+// const { google } = require("googleapis");
+// const { saveLogInfo } = require("../middlewares/logger/logInfo");
+// const Config = require("../models/config.model");
+
+// const analyzeTextWithPerspectiveAPI = async (
+//   content,
+//   API_KEY,
+//   DISCOVERY_URL,
+//   timeout
+// ) => {
+//   const SCORE_THRESHOLD = 0.5;
+
+//   if (!API_KEY || !DISCOVERY_URL) {
+//     throw new Error("Perspective API URL or API Key not set");
+//   }
+
+//   try {
+//     const client = await google.discoverAPI(DISCOVERY_URL);
+
+//     const analyzeRequest = {
+//       comment: {
+//         text: content,
+//       },
+//       requestedAttributes: {
+//         // SPAM: {},
+//         // UNSUBSTANTIAL: {},
+//         INSULT: {},
+//         PROFANITY: {},
+//         THREAT: {},
+//         SEXUALLY_EXPLICIT: {},
+//         IDENTITY_ATTACK: {},
+//         TOXICITY: {},
+//       },
+//     };
+
+//     const responsePromise = client.comments.analyze({
+//       key: API_KEY,
+//       resource: analyzeRequest,
+//     });
+
+//     const timeoutPromise = new Promise((resolve, reject) => {
+//       setTimeout(() => {
+//         reject(new Error("Request timed out"));
+//       }, timeout);
+//     });
+
+//     const response = await Promise.race([responsePromise, timeoutPromise]);
+
+//     const summaryScores = {};
+//     for (const attribute in response.data.attributeScores) {
+//       const summaryScore =
+//         response.data.attributeScores[attribute].summaryScore.value;
+//       if (summaryScore >= SCORE_THRESHOLD) {
+//         summaryScores[attribute] = summaryScore;
+//       }
+//     }
+
+//     return summaryScores;
+//   } catch (error) {
+//     throw new Error(`Error analyzing text: ${error.message}`);
+//   }
+// };
+
+// const analyzeContent = async (req, res, next) => {
+//   const timeout = 5000; // 5 seconds
+//   const API_KEY = process.env.PERSPECTIVE_API_KEY;
+//   const DISCOVERY_URL = process.env.PERSPECTIVE_API_DISCOVERY_URL;
+
+//   let usePerspectiveAPI;
+//   try {
+//     const config = await Config.findOne({}, { _id: 0, __v: 0 });
+//     usePerspectiveAPI = config.usePerspectiveAPI;
+//   } catch (error) {
+//     usePerspectiveAPI = false;
+//   }
+
+//   if (!usePerspectiveAPI || !API_KEY || !DISCOVERY_URL) {
+//     return next();
+//   }
+
+//   try {
+//     const { content } = req.body;
+//     const summaryScores = await analyzeTextWithPerspectiveAPI(
+//       content,
+//       API_KEY,
+//       DISCOVERY_URL,
+//       timeout
+//     );
+
+//     if (Object.keys(summaryScores).length > 0) {
+//       const type = "inappropriateContent";
+//       return res.status(403).json({ type });
+//     } else {
+//       next();
+//     }
+//   } catch (error) {
+//     const errorMessage = `Error processing Perspective API response: ${error.message}`;
+//     await saveLogInfo(null, errorMessage, "Perspective API", "error");
+//     next();
+//   }
+// };
 
 module.exports = analyzeContent;

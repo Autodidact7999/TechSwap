@@ -1,65 +1,63 @@
-const fs = require("fs");
 const multer = require("multer");
-const path = require("path");
+const { BlobServiceClient } = require('@azure/storage-blob');
+require('dotenv').config();
 
-function fileUpload(req, res, next) {
-  const up_folder = path.join(__dirname, "../../assets/userFiles");
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const AZURE_CONTAINER_NAME = "avatars";
 
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      if (!fs.existsSync(up_folder)) {
-        fs.mkdirSync(up_folder, { recursive: true });
-      }
-      cb(null, up_folder);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-    },
-  });
 
-  const upload = multer({
-    storage: storage,
+const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+const containerClient = blobServiceClient.getContainerClient(AZURE_CONTAINER_NAME);
+
+const upload = multer({
+    storage: multer.memoryStorage(),
     limits: {
-      fileSize: 50 * 1024 * 1024,
+        fileSize: 50 * 1024 * 1024, // 50MB limit
     },
     fileFilter: (req, file, cb) => {
-      if (
-        file.mimetype.startsWith("image/") ||
-        file.mimetype.startsWith("video/")
-      ) {
-        cb(null, true);
-      } else {
-        cb(null, false);
-      }
+        if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
+            cb(null, true);
+        } else {
+            cb(new Error("Unsupported file type"), false);
+        }
     },
-  });
+});
 
-  upload.any()(req, res, (err) => {
-    if (err) {
-      return res.status(500).json({
-        success: false,
-        message: "Error uploading file",
-        error: err.message,
-      });
-    }
+function fileUpload(req, res, next) {
+    upload.any()(req, res, async (err) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: "Error uploading file",
+                error: err.message,
+            });
+        }
 
-    if (!req.files || req.files.length === 0) {
-      return next();
-    }
+        if (!req.files || req.files.length === 0) {
+            return next();
+        }
 
-    const file = req.files[0];
-    const fileUrl = `${req.protocol}://${req.get("host")}/assets/userFiles/${
-      file.filename
-    }`;
+        try {
+            const file = req.files[0];
+            const blobName = `posts/${Date.now()}-${file.originalname}`;
+            const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+            await blockBlobClient.uploadData(file.buffer, {
+                blobHTTPHeaders: { blobContentType: file.mimetype }
+            });
 
-    req.file = file;
-    req.fileUrl = fileUrl;
-    req.fileType = file.mimetype.split("/")[0];
+            req.file = file;
+            req.fileUrl = blockBlobClient.url;
+            req.fileType = file.mimetype.split("/")[0];
 
-    next();
-  });
+            next();
+        } catch (uploadError) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to upload file to Azure Blob Storage",
+                error: uploadError.message,
+            });
+        }
+    });
 }
 
 module.exports = fileUpload;

@@ -197,10 +197,7 @@ const addUser = async (req, res, next) => {
   const defaultAvatar = "https://i.ibb.co/ZX94JDP/dp.jpg";
   
   // Determine file URL
-  const fileUrl = req.files && req.files[0]
-    ? `${req.protocol}://${req.get("host")}/assets/userAvatars/${req.files[0].filename}`
-    : defaultAvatar;
-
+  const fileUrl = req.fileUrl || defaultAvatar;
   try {
     // Hash password
     const hashedPassword = await bcrypt.hash(req.body.password, 10);

@@ -68,7 +68,6 @@ const analyzeTextWithPerspectiveAPI = async (
   }
 };
 
-
 const analyzeContent = async (req, res, next) => {
   console.log("Entering analyzeContent middleware");
   const timeout = 5000; // 5 seconds

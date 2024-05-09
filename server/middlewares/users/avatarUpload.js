@@ -39,12 +39,11 @@ function avatarUpload(req, res, next) {
         }
 
         if (!req.file) {
-            console.warn("No file uploaded");
-            return res.status(400).json({
-                success: false,
-                message: "No file uploaded. Please upload an image file.",
-            });
-        }
+          console.warn("No file uploaded, using default avatar.");
+          req.fileUrl = "https://i.ibb.co/ZX94JDP/dp.jpg"; // Default avatar URL
+          return next();
+     `` }
+
 
         console.log("File received, uploading to Azure Blob Storage...");
 

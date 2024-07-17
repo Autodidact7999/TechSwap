@@ -1,6 +1,6 @@
 # TechSwap
 
-Welcome to **TechSwap**, the cutting-edge platform dedicated to balancing the scales of technology discourse! This project is developed as part of the **CMPE Masters Project 2024**. TechSwap aims to create an inclusive community where both mainstream and emerging technologies receive equal attention and enthusiasm.
+Welcome to **TechSwap**, the cutting-edge platform dedicated to balancing the scales of technology discourse!. TechSwap aims to create an inclusive community where both mainstream and emerging technologies receive equal attention and enthusiasm.
 
 ## Project Overview
 
@@ -8,12 +8,6 @@ TechSwap is crafted to address the shortcomings in current technology forums tha
 
 **Visit Us:** [TechSwapHub.com](http://techswaphub.com)
 
-## Team Members
-
-- **Smarth Arora**
-- **Charika Bansal**
-- **Harsh Dharmeshkumar Naik**
-- **Rohit Kotecha**
 
 ## Features
 
